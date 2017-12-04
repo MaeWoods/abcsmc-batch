@@ -16,9 +16,9 @@ $ cp ABCSMC ../
 The SMC algorithm proceeds with an automated schedule and the populations are submitted as independent batch files, with the particles distributed in parallel.
 
 The running of the simulation is semi-automated and should be checked from time 
-to time as populations can be re-run if a problem occurs halfway through the algorithm. 
+to time as populations can be re-run if a problem surfaces halfway through the algorithm. 
 Populations are submitted as a job chain with files contained in the folder JobSubmission. 
-The submission is implemented in JobChain.sh using the qsub #$ -hold_jid $(JobName). 
+The submission is implemented in JobChain.sh using the qsub flag #$ -hold_jid $(JobName). 
 Depending on how many populations you expect before the number of generations increases, 
 you can set the number of consecutive jobs accordingly to ensure the random seed is varied between populations within the same generation.
 
