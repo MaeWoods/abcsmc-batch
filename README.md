@@ -1,5 +1,5 @@
 # abcsmc-batch
-A batch implementation of abcsmc. If modifying for own use, your simulation and distance function should be contained in simulation.cpp
+A batch implementation of approximate Bayesian computation sequential Monte-Carlo (abcsmc) see Sisson and Tanaka http://www.pnas.org/content/104/6/1760.full. If modifying for own use, your simulation and distance function should be contained in simulation.cpp
 See parameter_distance.setup
 
 # To compile
