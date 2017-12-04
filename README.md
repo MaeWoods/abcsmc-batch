@@ -4,9 +4,12 @@ See parameter_distance.setup
 
 # To compile
 
-$ cd source \n
-$ g++ main.cpp abcsmc.cpp simulation.cpp -std=gnu++11 -L/usr/local/lib/ -lgsl -lgslcblas -I/usr/local/include -o ABCSMC \n
-$ cp ABCSMC ../ \n
+$ cd source
+
+$ g++ main.cpp abcsmc.cpp simulation.cpp -std=gnu++11 -L/usr/local/lib/ -lgsl -lgslcblas -I/usr/local/include -o ABCSMC 
+
+$ cp ABCSMC ../
+
 
 # To run
 
