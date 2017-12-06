@@ -355,7 +355,7 @@ return retep;
 
 }
 
-int abcsmc::run_ams(double final_epsilon, double alpha, int JobID, int npart, int nparam, int seed, int position, int timepos){
+int abcsmc::run_ams(double final_epsilon, double alpha, int JobID, int npart, int nparam, int seed, int position){
 
 		// initialise rng
   const gsl_rng_type * T;
@@ -365,7 +365,7 @@ int abcsmc::run_ams(double final_epsilon, double alpha, int JobID, int npart, in
   r = gsl_rng_alloc (T);
 
   if( seed != 0 ){
-    gsl_rng_set(r, seed+(npart*timepos) );
+    gsl_rng_set(r, seed );
   }else{
     gsl_rng_set (r, time(NULL) );
   }
@@ -387,8 +387,7 @@ int position_prev = 0;
 		position = read_position(JobID);
         
         naccepted = set_naccepted(position, distances, parameters);
-
-	std::cout << "naccepted: " << naccepted << " Nparticles " << Nparticles << std::endl;
+		std::cout << "naccepted: " << naccepted << " Nparticles " << Nparticles << std::endl;
         
         position_prev = position;
         
@@ -399,14 +398,13 @@ int position_prev = 0;
         set_naccepted(position-1, distances, parameters);
         }
 
-        std::cout << "POSITION HERE: " << position << std::endl;
         compute_next_epsilon(final_epsilon, alpha, position, JobID);
         epsilon = getepsilon(position, JobID);
-        std::cout << "Got Epsilon: " << epsilon << std::endl;
+        std::cout << "Got epsilon: " << epsilon << std::endl;
+        
         }
         
-		iterate_one_population(position, epsilon, JobID, naccepted, seed,r, position_prev, naccepted);
-
+		iterate_one_population(position, epsilon, JobID, naccepted,r, position_prev, naccepted);
 		
 	gsl_rng_free (r);
 
@@ -416,11 +414,11 @@ int position_prev = 0;
 void abcsmc::compute_next_epsilon(double target_epsilon, double alpha, int position, int Job){
 
         vector<double> distance_values(1);
-	distance_values[0] = distances[0];
+		distance_values[0] = distances[0];
         for(int i=1; i<Nparticles; i++){
                 distance_values.push_back(distances[i]);
-		std::cout << "In loop distance_values: " << distance_values[i] << std::endl;
-		std::cout << "In loop distances: " << distances[i] << std::endl;        
+		std::cout << "Read in distance_values: " << distance_values[i] << std::endl;
+		std::cout << "distances: " << distances[i] << std::endl;        
 
 }
 		
@@ -428,12 +426,10 @@ void abcsmc::compute_next_epsilon(double target_epsilon, double alpha, int posit
         // Important to remember that the initial sort on distance is done on the first distance value
         sort(distance_values.begin(), distance_values.begin()+distance_values.size());
         int ntar = floor( alpha * Nparticles );
-        //print distance_values
 
         double new_epsilon = distance_values[ntar];
         double ret_epsilon = 0;
         
-        std::cout << "Floored it: " << std::endl;
         // Set the next epsilon
             if(new_epsilon < epsilon){
                 ret_epsilon = new_epsilon;
@@ -464,7 +460,7 @@ void abcsmc::compute_next_epsilon(double target_epsilon, double alpha, int posit
       Dr=sprintf(Dirr,"mkdir -p %d",position);
 	const int dir= system(Dirr);
 
-	  //this file contains, position and epsilon
+	  //this file contains epsilon
       Dn=sprintf(Dat,"%d/epsilon_curr%d.dat",position,Job);
    
       fstream my_vars_curr; 
@@ -482,11 +478,10 @@ void abcsmc::compute_next_epsilon(double target_epsilon, double alpha, int posit
 
 }
 
-void abcsmc::iterate_one_population(int position, double epsilon, int Job, int n_acc, int seed, gsl_rng* r, int position_prev, int naccepted){
+void abcsmc::iterate_one_population(int position, double epsilon, int Job, int n_acc, gsl_rng* r, int position_prev, int naccepted){
  
  		simulation sim;
         int sampled = 0;
-        
       
       //Print out the position of the next population 
       char pos[100];
@@ -502,53 +497,43 @@ void abcsmc::iterate_one_population(int position, double epsilon, int Job, int n
 			my_vars_curr << position << std::endl;
 			my_vars_curr.close();
       
-      	}
-
-         		
+      	}         		
 
     if(position>0){
 		
         if(position>1){
-        std::cout << "Before set prevs" << std::endl; 
-
 		if(naccepted>Nparticles){
          		set_prevs(Job, weights_prev, kernel, margins_prev, position-1);  
        		 }
         	else{
         		set_prevs(Job, weights_prev, kernel, margins_prev, position-2);   
         	}   
-
-        	std::cout << "After set prevs" << std::endl;      
 			getKernel(kernel);
-			std::cout << "After get kernel" << std::endl; 
+			std::cout << "kernel limits computed" << std::endl; 
             computeParticleWeights(weights_curr);
-            std::cout << "After compute particle weights" << std::endl; 
+            std::cout << "weights calculated" << std::endl; 
             }
         else{
-	std::cout << "Did it get before get kernel" << std::endl; 
        	getKernel(kernel);
             for(int i=0; i<Nparticles; i++){
                 weights_curr[i] = 1;
                 }
             }
-        std::cout << "After kernel" << std::endl;
         normalizeWeights();
+        
+        //If developing for model selection
         modelMarginals();
         if(position==1){
         margins_prev = margins_curr;
         }
-        std::cout << "After marginals: " << position << std::endl;
-        // Compute kernels, deal with the previous population
         
 		PrintOutRes(Job, position);
-        std::cout << "After print" << std::endl;
+        std::cout << "Printed weights, kernel" << std::endl;
+        
         /////////////////////////////////
         // Prepare for next population //
         /////////////////////////////////
-        //set weights, parameters, margins, kernel and epsilon
         int resim = 1;
-
-		std::cout << "Before sample the parameter" << std::endl;
 		sampleTheParameter(this_parameter, r);		
 		sim.simulate(this_parameter, epsilon, position, Job, resim, r);
         
@@ -568,7 +553,7 @@ void abcsmc::PrintOutRes(int Job, int pos){
 	char Dat[100];
     int Dn;
 
-	std::cout << "pos " << pos << " Job " << Job << std::endl;
+	std::cout << "Printing position " << pos << " Job " << Job << std::endl;
 	  //this file contains, position
       Dn=sprintf(Dat,"%d/vars_curr-J%d.dat",pos,Job);
    
@@ -601,7 +586,7 @@ void abcsmc::modelMarginals(){
 
    margins_curr = 0;
             for(int j=0; j<Nparticles; j++){   
-                   margins_curr = margins_curr + weights_curr[j];
+                   margins_curr = 1;//margins_curr + weights_curr[j];
                    }
     
 }
@@ -653,7 +638,6 @@ double abcsmc::perturbParticle(vector<double> &this_parameter, int thisp, gsl_rn
                   }
         	else{
         		x = 1/(prior[n][1]-prior[n][0]);
-        		//std::cout << "in here? " << std::endl;
         		}
 
 			prior_prob = prior_prob*x;
@@ -673,7 +657,6 @@ void abcsmc::computeParticleWeights(vector<double> &weights_curr){
             }
             
             // calculate model prior probility 
-            //mprob = self.modelprior[ this_model ]
             // particle prior probability
             double pprob = 1;
             for( int n=0; n<nparameters; n++){
@@ -684,11 +667,7 @@ void abcsmc::computeParticleWeights(vector<double> &weights_curr){
                   }
         	else{
         		x = 1/(prior[n][1]-prior[n][0]);
-        		}
-                  //  statistics.getPdfUniform(self.models[ this_model ].prior[n][1],
-                    //                           self.models[ this_model ].prior[n][2],
-                      //                         this_param[n])
-                                               
+        		}                              
                                                                              
                 pprob = pprob*x;
             }
@@ -699,7 +678,6 @@ void abcsmc::computeParticleWeights(vector<double> &weights_curr){
             denom_m = margins_prev;
             
             double denom = 0;
-            //# print "Calculating denom\t", selected_model, sampleParameters
             for(int j=0; j<Nparticles; j++){
 
                 denom = denom + weights_prev[j] * getPdfParameterKernel(this_param, j);
@@ -711,13 +689,9 @@ void abcsmc::computeParticleWeights(vector<double> &weights_curr){
 		}
 }
 
-// Here params and params0 refer to one particle each.
-// Auxilliary is a vector size of nparameters
 double abcsmc::getPdfParameterKernel(vector<double> this_parameter, int j){
 
     double prob=1;
-	//n refers to the index of the parameter (integer between 0 and np-1)
-	//ind is an integer between 0 and len(kernel[0])-1 which enables to determine the kernel to use
         for(int n=0; n<nparameters; n++){
 			double kern; 
 			if((parameters[j][n]>(this_parameter[n]+kernel[n][1]))||(parameters[j][n]<(this_parameter[n]+kernel[n][0]))){
@@ -744,9 +718,6 @@ void abcsmc::normalizeWeights(void){
 
 int abcsmc::sample_particle(gsl_rng* r){
 
-	//std::cout << "before uniform" << std::endl;
-	//std::cout << "margins_prev " << margins_prev << std::endl;
-	//std::cout << "weights_curr[1] " << weights_curr[1] << std::endl;
     double u = runiform(r,0,margins_prev);
     double F = 0;
     int i;
@@ -780,10 +751,7 @@ void abcsmc::sampleTheParameterFromPrior(vector<double> &this_parameter){
 
 void abcsmc::sampleTheParameter(vector<double> &this_parameter, gsl_rng* r){
 
-            
-            double prior_prob = -1;
-            std::cout << "after sample particle" << std::endl;
-            
+            double prior_prob = -1;            
             for(int i = 0; i<Nparticles; i++){
             std::cout << "weights_curr[i]" << weights_curr[i] << std::endl;
 		}
@@ -792,14 +760,19 @@ void abcsmc::sampleTheParameter(vector<double> &this_parameter, gsl_rng* r){
 
 				//sample putative particle from previous population
 				int p = sample_particle(r);
-			  //std::cout << "after sample particle" << std::endl;
 				for(int nn=0; nn<nparameters; nn++){
 					this_parameter[nn] = parameters[p][nn];
 					}
 					
 				prior_prob = perturbParticle(this_parameter, p, r);
-				//std::cout << "prior prob: " << prior_prob << " p " << p << std::endl;
-						
-				}            
-std::cout << "end sample the parameter" << std::endl;
+				
+				if(prior_prob>0){
+				
+				for(int nn=0; nn<nparameters; nn++){
+					std::cout << "this_parameter[nn]: " << this_parameter[nn] << " parameters[p][nn]: " << parameters[p][nn] << std::endl;
+					}
+				
+				}						
+	
+			}            
 }

@@ -144,7 +144,7 @@ int main (int argc, char * const argv[]) {
   
   abcsmc mabc;
   
-  mabc.run_ams(Final_ep, alph, Job, Npart, nparam, set_seed, position, position);
+  mabc.run_ams(Final_ep, alph, Job, Npart, nparam, set_seed, position);
   
   return(0); 
 }

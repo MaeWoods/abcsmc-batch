@@ -84,9 +84,9 @@ public:
 	int set_naccepted(int position, vector<double> &distances, vector<vector<double> > &parameters_prev);
 	int read_position(int job);
 	double getepsilon(int position, int Job);
-	int run_ams(double final_epsilon, double alpha, int JobID, int npart, int nparam, int seed, int position, int timepos);
+	int run_ams(double final_epsilon, double alpha, int JobID, int npart, int nparam, int seed, int position);
 	void compute_next_epsilon(double target_epsilon, double alpha, int position, int Job);
-	void iterate_one_population(int position, double epsilon, int Job, int n_acc, int seed, gsl_rng* r, int position_prev, int naccep);
+	void iterate_one_population(int position, double epsilon, int Job, int n_acc, gsl_rng* r, int position_prev, int naccep);
 	void PrintOutRes(int Job, int position_prev);
 	void modelMarginals();
 	void getKernel(vector<vector<double> > &kernel);

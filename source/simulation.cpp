@@ -1075,6 +1075,61 @@ cout << "end of initialization: " << std::endl;
       }
       
      if(del<epsilon){
+
+
+char Datins[100];
+    int Dnins;
+      Dnins=sprintf(Datins,"results-resim-M%d-P%d-B%d-J%d.dat",position,seed,position,seed);
+    fstream myfileIns; 
+    myfileIns.open(Datins,ios::out);
+ 	
+    if(myfileIns.is_open()){
+ 	
+      myfileIns << "Num" << ", " << "CNum" <<  ", " << "CSize" ", " << "PDiv" << ", " << "CDiv" << ", " << "RelLen" ", " << "NTrans" << ", " << "NIns" << ", " << "NDel" << ", " << "Rins" << ", " << "Rdel" << ", " << "Rtrans" << '\n';
+      
+      for (int i = 0; i < Npop; i++) {
+	for(int j = 0; j < NChr; j++){
+
+	int NTpl = 0;
+	int NIpl = 0;
+	int NDpl = 0;
+	
+	for(int g_d=0; g_d<n_chrprev[i]; g_d++){
+	
+	NTpl += NT[i][g_d][j];
+	NIpl += NI[i][g_d][j];
+	NDpl += ND[i][g_d][j];
+
+	}
+	  
+	  double log_signed_div = 0;
+	
+	  if(DivCprev[i][j]==0){
+	    log_signed_div = 0;
+	  }
+	  else if(DivCprev[i][j]<0){
+	    log_signed_div = -1*log10(abs(DivCprev[i][j]));
+	
+	  }
+	  else{
+	    log_signed_div = log10(DivCprev[i][j]);
+	  }
+    
+	  myfileIns << i << ", "  << j << ", " << CSize[j] << ", " << log_signed_div/CSize[j] << ", " << log_signed_div << ", " << DivCprev[i][j]/CSize[j] << ", " << NTpl << ", " << NIpl << ", " << NDpl << ", " << rins[i][j] << ", " << rdel[i][j] << ", " << rtrans[i][j] << '\n';
+	 
+	 if(DivCprev[i][j]/CSize[j]<-2){
+	 std::cout << "ERROR!!!  gd: " << GDprev[i] << " i: " << i << " j: " << j << " how much " << DivCprev[i][j]/CSize[j] << std::endl;
+	 }
+	 
+	}
+      }
+      myfileIns.close();
+
+    }
+     else{
+       std::cerr << "error: open of output results file unsuccessful: " << Datins << std::endl;
+    }
+
     
 
 	std::cout << "position: " << position << std::endl;
