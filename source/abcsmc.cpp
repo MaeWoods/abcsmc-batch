@@ -684,7 +684,7 @@ void abcsmc::computeParticleWeights(vector<double> &weights_curr){
 
 			}
 			std::cout << " numer " << numer << " denom_m " << denom_m << " denom " << denom << " margins_prev " << margins_prev << std::endl;		
-			weights_curr[k] = numer/(denom_m*(denom/margins_prev));
+			weights_curr[k] = numer/denom;
 			
 		}
 }

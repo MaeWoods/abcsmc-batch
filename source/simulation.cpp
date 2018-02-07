@@ -122,14 +122,10 @@ void simulation::simulate(vector<double> this_parameters, double epsilon, int po
 	vector<int> GD;
 	vector<double> GDprob;
 	
-	vector<int> Pcinplus;
-	vector<int> Pcinminus;
-	
-	vector<int> Pcinplusprev;
-	vector<int> Pcinminusprev;
+	vector<double> Pcinminus;
+	vector<double> Pcinminusprev;
        
     //parameters inferred
-    double chr_gain = 0;
     double chr_loss = 0;
     double p_tran = 0;     
     double mu_ki = 0;
@@ -152,8 +148,7 @@ void simulation::simulate(vector<double> this_parameters, double epsilon, int po
 
       // probability of chromosome gain and loss
       chr_loss = runiform(r,Lchr_loss,Uchr_loss); //gsl_rng_uniform (r);
-      chr_gain = runiform(r,Lchr_gain,Uchr_gain); //gsl_rng_uniform (r);
-
+      
       // probability of translocation per generation
       p_tran = runiform(r,Lp_tran,Up_tran); //gsl_rng_uniform (r);
 
@@ -177,15 +172,14 @@ void simulation::simulate(vector<double> this_parameters, double epsilon, int po
       
       else{
 
-      chr_gain =      this_parameters[0];
-      chr_loss =     this_parameters[1];
-      p_tran =      this_parameters[2];
-      mu_ki =  this_parameters[3];
-      mu_kd =  this_parameters[4];
-      fitness = this_parameters[5];
-      maxchr =      this_parameters[6];
-      SV_mean =      this_parameters[7];
-      gnmdou =      this_parameters[8];
+      chr_loss =     this_parameters[0];
+      p_tran =      this_parameters[1];
+      mu_ki =  this_parameters[2];
+      mu_kd =  this_parameters[3];
+      fitness = this_parameters[4];
+      maxchr =      this_parameters[5];
+      SV_mean =      this_parameters[6];
+      gnmdou =      this_parameters[7];
       
     }
       
@@ -262,8 +256,6 @@ void simulation::simulate(vector<double> this_parameters, double epsilon, int po
     rins.resize(Npop);
     rtrans.resize(Npop);    
     
-    Pcinplus.resize(Npop);
-    Pcinplusprev.resize(Npop);
     Pcinminus.resize(Npop);
     Pcinminusprev.resize(Npop);
 
@@ -371,8 +363,6 @@ void simulation::simulate(vector<double> this_parameters, double epsilon, int po
 	
     for(int i=0; i<Npop; i++){
       GDprob[i] = gnmdou*(  runiform(r,0,1) );
-      Pcinplus[i] = chr_gain*(  runiform(r,0,1) );
-      Pcinplusprev[i] = Pcinplus[i];
       Pcinminus[i] = chr_loss*(  runiform(r,0,1) );
       Pcinminusprev[i] = Pcinminus[i];
       GDprobprev[i] = GDprob[i];
@@ -413,35 +403,51 @@ cout << "end of initialization: " << std::endl;
 	
     //elements for selection
     //std::cout << "\tSelection" << std::endl;
-      vector<int> keep;
+      keep.clear();
 	
       keep.resize(Npop);
 	
       int n_remaining = 0;
       int n_checklen = 0;
-
 	//Genome doubling
     for(int i=0; i<Npop; i++){	
+    
 	double r_gd = runiform(r,0,1);
 	if(r_gd<GDprob[i]){
-		
 	  //Insert vectors		
-	  vector<vector<double> > MCins;
-	  vector<vector<double> > Mins;
-	  vector<double> CMixins;
+	  MCins.clear();
+	  Mins.clear();
+	  CMixins.clear();
+	  NIins.clear();
+	  NDins.clear();
+	  NTins.clear();
+	  
 	  MCins.resize(n_chrprev[i]);
 	  Mins.resize(n_chrprev[i]);
+	  
+	  NIins.resize(n_chrprev[i]);
+	  NDins.resize(n_chrprev[i]);
+	  NTins.resize(n_chrprev[i]);
+	  
 	  CMixins.resize(n_chrprev[i]);
-				
 	  for(int j=0; j<n_chrprev[i]; j++){
 	    MCins[j].resize(NChr);
 	    Mins[j].resize(NChr);
+	    
+	    NIins[j].resize(NChr);
+	    NDins[j].resize(NChr);
+	    NTins[j].resize(NChr);
+	    CMixins[j]=CMixprev[i][j];
 				
 	    for(int k=0; k<NChr; k++){
 				
 	      MCins[j][k]=MCprev[i][j][k];
 	      Mins[j][k]=Mprev[i][j][k];
-	      CMixins[j]=CMixprev[i][j];
+	      
+	      
+	      NIins[j][k]=NIprev[i][j][k];
+	      NDins[j][k]=NDprev[i][j][k];
+	      NTins[j][k]=NTprev[i][j][k];
 				
 	    }
 	  }
@@ -450,6 +456,16 @@ cout << "end of initialization: " << std::endl;
 	  MCprev[i].insert(MCprev[i].end(), MCins.begin(), MCins.end());
 	  Mprev[i].reserve(Mprev[i].size() + Mins.size());
 	  Mprev[i].insert(Mprev[i].end(), Mins.begin(), Mins.end());
+	  
+	  //insertions and deletions
+		  NIprev[i].reserve(NIprev[i].size() + NIins.size());
+		  NIprev[i].insert(NIprev[i].end(), NIins.begin(), NIins.end());
+		  
+		  NDprev[i].reserve(NDprev[i].size() + NDins.size());
+		  NDprev[i].insert(NDprev[i].end(), NDins.begin(), NDins.end());
+		  
+		  NTprev[i].reserve(NTprev[i].size() + NTins.size());
+		  NTprev[i].insert(NTprev[i].end(), NTins.begin(), NTins.end());
 	    
 	  CMixprev[i].reserve(CMixprev[i].size() + CMixins.size());
 	  CMixprev[i].insert(CMixprev[i].end(), CMixins.begin(), CMixins.end());
@@ -458,79 +474,140 @@ cout << "end of initialization: " << std::endl;
 	  DivCprev[i][2] += Cprev[i][2];
 				
 
-	  for(int m=0; m<n_chrprev[i]; m++){
-	  	for(int k=0; k<NChr; k++){
-	    	NIprev[i][m][k] = NIprev[i][m][k] + NIprev[i][m][k];
-	    	}
-	  }
-
 	  GDprev[i] += 1;
-	  n_chr[i] = n_chrprev[i]*2;
+	  
+	  
+	  n_chrprev[i] += n_chrprev[i];
 	}
 	
 	double r_cd = runiform(r,0,1);
 	double r_cl = runiform(r,0,1);
 	
-		//chromosome gain
-		if(r_cd<Pcinplus[i]){
-
-		//sample a chromosome
-		int sample_chr = ceil(n_chrprev[i]*runiform(r,0,1))-1;
-
-				//Insert vectors
-		  vector<vector<double> > MCins;
-		  vector<vector<double> > Mins;
-		  vector<double> CMixins;
-		  MCins.resize(NChr);
-		  Mins.resize(NChr);
-		  CMixins.resize(1);
-
-				for(int k=0; k<NChr; k++){
-
-				  MCins[0][k]=MCprev[i][sample_chr][k];
-		  Mins[0][k]=Mprev[i][sample_chr][k];
-		  CMixins[0]=CMixprev[i][sample_chr];
-
-				}
-
-		  MCprev[i].reserve(MCprev[i].size() + MCins.size());
-		  MCprev[i].insert(MCprev[i].end(), MCins.begin(), MCins.end());
-		  Mprev[i].reserve(Mprev[i].size() + Mins.size());
-		  Mprev[i].insert(Mprev[i].end(), Mins.begin(), Mins.end());
-
-		  CMixprev[i].reserve(CMixprev[i].size() + CMixins.size());
-		  CMixprev[i].insert(CMixprev[i].end(), CMixins.begin(), CMixins.end());
-		  DivCprev[i][0] += MCprev[i][sample_chr][0];
-		  DivCprev[i][1] += MCprev[i][sample_chr][1];
-		  DivCprev[i][2] += MCprev[i][sample_chr][2];
-
-		  n_chrprev[i] = n_chrprev[i] + 1;
-
-		  for(int m=0; m<NChr; m++){
-				NIprev[i][sample_chr][m] = NIprev[i][sample_chr][m] + NIprev[i][sample_chr][m];
-		  }
-
-		}
-		
 		//chromosome loss
-		if(r_cl<Pcinminus[i]){
+		if((r_cl<Pcinminus[i])&&(n_chrprev[i]>(NChr-1))){
+		
+		  MCcpy.clear();
+		  Mcpy.clear();
+		  CMixcpy.clear();
+		  NIcpy.clear();
+		  NDcpy.clear();
+		  NTcpy.clear();
+		
+		  MCcpy.resize(n_chrprev[i]);
+		  Mcpy.resize(n_chrprev[i]);
+		  CMixcpy.resize(n_chrprev[i]);  
+		  NIcpy.resize(n_chrprev[i]);
+		  NDcpy.resize(n_chrprev[i]);
+		  NTcpy.resize(n_chrprev[i]);		
+		  
+		  for(int j=0; j<n_chrprev[i]; j++){
+	
+			MCcpy[j].resize(NChr);
+			Mcpy[j].resize(NChr);
+		
+			NIcpy[j].resize(NChr);
+			NDcpy[j].resize(NChr);
+			NTcpy[j].resize(NChr);
+			
+			CMixcpy[j] = CMixprev[i][j];
+			
+			for(int k=0; k<NChr; k++){
+			
+				MCcpy[j][k] = MCprev[i][j][k];
+				Mcpy[j][k] = Mprev[i][j][k];
+		
+				NIcpy[j][k] = NIprev[i][j][k];
+				NDcpy[j][k] = NDprev[i][j][k];
+				NTcpy[j][k] = NTprev[i][j][k];
+			
+			}
+	
+		  }	
 		
 		  //sample a chromosome
 		  int sample_chr = ceil(n_chrprev[i]*runiform(r,0,1))-1;
-		
 		  DivCprev[i][0] -= MCprev[i][sample_chr][0];
 		  DivCprev[i][1] -= MCprev[i][sample_chr][1];
 		  DivCprev[i][2] -= MCprev[i][sample_chr][2];	
-		  MCprev[i].erase(MCprev[i].begin() + sample_chr);	  
-		  Mprev[i].erase(Mprev[i].begin() + sample_chr);
-		  NIprev[i].erase(NIprev[i].begin() + sample_chr);
-		  NDprev[i].erase(NDprev[i].begin() + sample_chr);
-		  NTprev[i].erase(NTprev[i].begin() + sample_chr);
-		  CMixprev[i].erase(CMixprev[i].begin() + sample_chr);	
-		  n_chrprev[i] = n_chrprev[i] - 1;
+		  
+		  MCprev[i].resize(n_chrprev[i]-1);
+		  Mprev[i].resize(n_chrprev[i]-1);
+		  CMixprev[i].resize(n_chrprev[i]-1);
+	  
+		  NIprev[i].resize(n_chrprev[i]-1);
+		  NDprev[i].resize(n_chrprev[i]-1);
+		  NTprev[i].resize(n_chrprev[i]-1);
+	
+		  for(int j=0; j<(n_chrprev[i]-1); j++){
+	
+			MCprev[i][j].resize(NChr);
+			Mprev[i][j].resize(NChr);
+		
+			NIprev[i][j].resize(NChr);
+			NDprev[i][j].resize(NChr);
+			NTprev[i][j].resize(NChr);
+	
+		  }	
+		  int losscounter = 0;
+		  for(int g_d=0; g_d<n_chrprev[i]; g_d++){
+		  
+		  if(g_d!=sample_chr){
+
+	  for(int j = 0; j < NChr; j++){	
+	
+     
+	      Mprev[i][losscounter][j]=Mcpy[g_d][j];
+	      MCprev[i][losscounter][j]=MCcpy[g_d][j];
+	      CMixprev[i][losscounter]=CMixcpy[g_d];
+	      
+	      NTprev[i][losscounter][j] = NTcpy[g_d][j];
+	    NIprev[i][losscounter][j] = NIcpy[g_d][j];
+	    NDprev[i][losscounter][j] = NDcpy[g_d][j];
+
+    
+	  }
+	  losscounter += 1;
+	  }
+	
+
+	}
+		  n_chrprev[i] -= 1;
 	
 		}
-      
+		
+				/////////////////////////////
+		/////////UpdateM/////////////
+		/////////////////////////////
+		for(int g_d=0; g_d<n_chrprev[i]; g_d++){
+		
+		  for(int j=0; j<NChr; j++){
+			
+			double sum_j = 0;
+			
+			for(int k=0; k<NChr; k++){
+		
+			double cprev_size = 0;
+		
+			cprev_size = Cprev[i][k];
+		
+			  //Avoid seg fault
+			  if(cprev_size==0){
+			  Mprev[i][g_d][k] = 0;
+			  }
+			  else{
+			  Mprev[i][g_d][k] = MCprev[i][g_d][k]/cprev_size;
+			  }
+				
+			  sum_j = Mprev[i][g_d][k]*Cprev[i][k] + sum_j;
+							
+			}
+			
+			CMixprev[i][g_d]=sum_j;
+
+		  }
+	  
+		}
+
 		//////////////////////////////////////////////////////
 		/////////Mutate: insertions and deletions/////////////
 		//////////////////////////////////////////////////////
@@ -579,7 +656,7 @@ cout << "end of initialization: " << std::endl;
 			}	
 		
 		}
-	
+
 		/////////////////////////////
 		/////////UpdateM/////////////
 		/////////////////////////////
@@ -612,7 +689,7 @@ cout << "end of initialization: " << std::endl;
 		  }
 	  
 		}
-		
+	
 		//////////////////////////////////////////////////////
 		/////////Mutate: translocations///////////////////////
 		//////////////////////////////////////////////////////
@@ -638,7 +715,7 @@ cout << "end of initialization: " << std::endl;
 			  ///Mutate: second chomsome///
 			  int j1tick = 0;
 			  int j1counte = 0;
-			  for(int j1=0; j1<n_chrprev[i]; j1++){
+			  for(int j1=j; j1<n_chrprev[i]; j1++){
 		  
 			if(j1tick==NChr){
 			  j1counte = j1counte + 1;
@@ -703,7 +780,7 @@ cout << "end of initialization: " << std::endl;
 	  
 		  }
 		  
-		  
+	
 		//////////////////////////////////////////////////////
 		/////////Update M & MC ///////////////////////////////
 		//////////////////////////////////////////////////////
@@ -740,7 +817,6 @@ cout << "end of initialization: " << std::endl;
 	int check_len = 0;
 	int check_lendiv = 0;
     keep[i] = 0;
-		
 	for(int g_d=0; g_d<n_chrprev[i]; g_d++){
 			
 	    double p1 = 1 - (Curvemax/(1+exp(-1*fitness*((CMixprev[i][g_d])-minchr))));
@@ -764,7 +840,7 @@ cout << "end of initialization: " << std::endl;
 	    check_len = 0;
 	    }
 	    
-	    if(CMixprev[i][g_d]>100*maxchr){
+	    if(CMixprev[i][g_d]>25*maxchr){
 	    
 	    check_lendiv = 1;
 	    
@@ -775,18 +851,14 @@ cout << "end of initialization: " << std::endl;
 			
 	}
 	  
-	if(check_len==0){
+	if((check_len==0)&&(check_lendiv==0)&&(n_chrprev[i]!=0)){
 		
 	  keep[i] = 1;
 	  n_remaining += 1;
 	}
-	if(check_lendiv==1){
-	 n_checklen = 1;
-	}
 	
       }
-      
-      if((n_remaining==0)||(n_checklen==1)){
+      if(n_remaining==0){
       
       ngen=gg;
       Pop_remaining = 0;
@@ -811,12 +883,11 @@ cout << "end of initialization: " << std::endl;
 	
 	myfileDatParam << chr_loss << '\t';
 	myfileDatParam << p_tran << '\t';
-	myfileDatParam << fitness << '\t';
-	myfileDatParam << SV_mean << '\t';
 	myfileDatParam << mu_ki << '\t';
 	myfileDatParam << mu_kd << '\t';
-	myfileDatParam << gnmdou << '\t';
-	myfileDatParam << maxchr << std::endl;
+	myfileDatParam << fitness << '\t';
+        myfileDatParam << maxchr << '\t';
+	myfileDatParam << gnmdou << std::endl;
 	
 	myfileDatParam.close();
       }
@@ -831,7 +902,7 @@ cout << "end of initialization: " << std::endl;
       }
       else{
 	
-      vector<int> sample_vec;
+      sample_vec.clear();
       sample_vec.resize(n_remaining);
       int counter = 0;
       for(int q=0; q<Npop; q++){
@@ -844,11 +915,15 @@ cout << "end of initialization: " << std::endl;
 	}
 	
       }
-
       //////////////////////////////////////////////////////
       /////////Resample/////////////////////////////////////
       //////////////////////////////////////////////////////
       //std::cout << "\tResample" << std::endl;
+      cin_orig.clear();
+      cin_orig.resize(Npop);
+      for (int i = 0; i < Npop; i++) {
+      cin_orig[i] = n_chrprev[i];
+      }
       for (int i = 0; i < Npop; i++) {
 	int newgd = 0;
 
@@ -857,29 +932,43 @@ cout << "end of initialization: " << std::endl;
 
 	
 	  if(n_chr[i]!=n_chrprev[i]){
+	  
+	  	MC[i].clear();
+		M[i].clear();
+		CMix[i].clear();
+		
+		NI[i].clear();
+		ND[i].clear();
+		NT[i].clear();
 
 	    MC[i].resize(MCprev[i].size());
 	    M[i].resize(Mprev[i].size());
 	    CMix[i].resize(CMixprev[i].size());
+	    NI[i].resize(NIprev[i].size());
+	    ND[i].resize(NDprev[i].size());
+	    NT[i].resize(NTprev[i].size());
 
-	    for(int j=0; j<M[i].size(); j++){
+	    for(int j=0; j<n_chrprev[i]; j++){
 	
 	      MC[i][j].resize(NChr);
 	      M[i][j].resize(NChr);
+	      
+	      NI[i][j].resize(NChr);
+	      ND[i][j].resize(NChr);
+	      NT[i][j].resize(NChr);
 	
 	    }
 	
 	  }
-	
+	  	
 	    for(int j = 0; j < NChr; j++){
-
+	    
 	      C[i][j]=Cprev[i][j];
 	      DivC[i][j]=DivCprev[i][j];
     
 	      rdel[i][j] = rdelprev[i][j];
 	      rins[i][j] = rinsprev[i][j];
 	      rtrans[i][j] = rtransprev[i][j];
-	      
 	      for(int g_d=0; g_d<n_chrprev[i]; g_d++){
 	      
 	      CMix[i][g_d]=CMixprev[i][g_d];
@@ -892,31 +981,47 @@ cout << "end of initialization: " << std::endl;
 		  MC[i][g_d][j]=MCprev[i][g_d][j];
 	
 	    }
+	    
 	  }
+	  
+	  n_chr[i] = n_chrprev[i];
 	  newgd = GDprev[i];
 	  GDprob[i] = GDprobprev[i];
-	  Pcinplus[i] = Pcinplusprev[i];
 	  Pcinminus[i] = Pcinminusprev[i];
-	
+	  	
 	}
 	else{
 
 	  double rnew = runiform(r,0,1);
 	  int position = floor(rnew*n_remaining);
-	
 	  if(n_chr[i]!=n_chrprev[sample_vec[position]]){
 	
 		MC[i].clear();
 		M[i].clear();
 		CMix[i].clear();
+		
+		NI[i].clear();
+		ND[i].clear();
+		NT[i].clear();
+		
+		
 	    MC[i].resize(MCprev[sample_vec[position]].size());
 	    M[i].resize(Mprev[sample_vec[position]].size());
+	    
+	    NI[i].resize(NIprev[sample_vec[position]].size());
+	    ND[i].resize(NDprev[sample_vec[position]].size());
+	    NT[i].resize(NTprev[sample_vec[position]].size());
+	    
 	    CMix[i].resize(CMixprev[sample_vec[position]].size());
 	
-	    for(int j=0; j<M[i].size(); j++){
+	    for(int j=0; j<n_chrprev[sample_vec[position]]; j++){
 	
 	      MC[i][j].resize(NChr);
 	      M[i][j].resize(NChr);
+	      
+	      NI[i][j].resize(NChr);
+	      ND[i][j].resize(NChr);
+	      NT[i][j].resize(NChr);
 	
 	    }
 
@@ -946,7 +1051,7 @@ cout << "end of initialization: " << std::endl;
 
 	  }
 
-
+	  n_chr[i] = n_chrprev[sample_vec[position]];
 	  newgd = GDprev[sample_vec[position]];
 	  GDprob[i] = GDprobprev[sample_vec[position]];
 	  Pcinminus[i] = Pcinminusprev[sample_vec[position]];
@@ -956,59 +1061,69 @@ cout << "end of initialization: " << std::endl;
 	GD[i] = newgd;
 	
       }
-	
       //////////////////////////////////////////////////////
       /////////Update vectors///////////////////////////////
       //////////////////////////////////////////////////////
 
       for (int i = 0; i < Npop; i++) {
 	
-	if(n_chrprev[i]!=n_chr[i]){
+	if(n_chr[i]!=cin_orig[i]){
+	
+		MCprev[i].clear();
+		Mprev[i].clear();
+		CMixprev[i].clear();
+		
+		NIprev[i].clear();
+		NDprev[i].clear();
+		NTprev[i].clear();
 
 	  MCprev[i].resize(MC[i].size());
-				
 	  Mprev[i].resize(M[i].size());
-			
 	  CMixprev[i].resize(CMix[i].size());
+	  
+	  NIprev[i].resize(NI[i].size());
+	  NDprev[i].resize(ND[i].size());
+	  NTprev[i].resize(NT[i].size());
 	
-	  for(int j=0; j<Mprev[i].size(); j++){
+	  for(int j=0; j<n_chr[i]; j++){
 	
 	    MCprev[i][j].resize(NChr);
 	    Mprev[i][j].resize(NChr);
+	    
+	    NIprev[i][j].resize(NChr);
+	    NDprev[i][j].resize(NChr);
+	    NTprev[i][j].resize(NChr);
 	
 	  }	
 	
 	}
 	
-	for(int g_d=0; g_d<n_chrprev[i]; g_d++){
+	for(int g_d=0; g_d<n_chr[i]; g_d++){
 
 	  for(int j = 0; j < NChr; j++){	
 	
 	    Cprev[i][j]=C[i][j];
-   
-	    for(int k = 0; k < NChr; k++){   
      
-	      Mprev[i][g_d][k]=M[i][g_d][k];
-	      MCprev[i][g_d][k]=MC[i][g_d][k];
+	      Mprev[i][g_d][j]=M[i][g_d][j];
+	      MCprev[i][g_d][j]=MC[i][g_d][j];
+	      
+	      NTprev[i][g_d][j] = NT[i][g_d][j];
+	    NIprev[i][g_d][j] = NI[i][g_d][j];
+	    NDprev[i][g_d][j] = ND[i][g_d][j];
 		
-	    }
-
 	    DivCprev[i][j]=DivC[i][j];
 	    CMixprev[i][g_d]=CMix[i][g_d];
     	rdelprev[i][j] = rdel[i][j];
 	    rinsprev[i][j] = rins[i][j];
 	    rtransprev[i][j] = rtrans[i][j];
     
-	    NTprev[i][g_d][j] = NT[i][g_d][j];
-	    NIprev[i][g_d][j] = NI[i][g_d][j];
-	    NDprev[i][g_d][j] = ND[i][g_d][j];
-	
 	  }
 	
 	}
 	GDprev[i] = GD[i];
 	Pcinminusprev[i] = Pcinminus[i];
 	GDprobprev[i] = GDprob[i];
+	n_chrprev[i] = n_chr[i];
 	
       }
       
@@ -1064,9 +1179,9 @@ cout << "end of initialization: " << std::endl;
     }
     double del = 0;
     double myprob = 0;
-    for(int b=0; b<90; b++){
+    for(int b=0; b<98; b++){
     
-    myprob = 0.05 + b*0.01;
+    myprob = 0.01 + b*0.01;
     
     double qdatexp = gsl_stats_quantile_from_sorted_data (sorted_dataexp, stride, lenExp, myprob);
     
@@ -1142,7 +1257,7 @@ char Datins[100];
 	const int dir= system(Dirr);
 
 
-      Dn=sprintf(Dat,"%d/params_prev/%d.dat",position,seed);
+      Dn=sprintf(Dat,"%d/params_prev/param-M%d-P%d-B%d-J%d.dat",position,position,seed,position,seed);
    
       fstream myfileDatParam; 
       myfileDatParam.open(Dat,ios::out);
@@ -1150,13 +1265,11 @@ char Datins[100];
       if(myfileDatParam.is_open()){
 	
 	myfileDatParam << chr_loss << '\t';
-	myfileDatParam << chr_gain << '\t';
 	myfileDatParam << p_tran << '\t';
 	myfileDatParam << mu_ki << '\t';
 	myfileDatParam << mu_kd << '\t';
 	myfileDatParam << fitness << '\t';
 	myfileDatParam << maxchr << '\t';
-	myfileDatParam << SV_mean << '\t';
 	myfileDatParam << gnmdou << std::endl;
 	myfileDatParam << del << std::endl;
 	
@@ -1191,7 +1304,6 @@ char Datins[100];
 	GDprev.clear();
 	GDprobprev.clear();
 	CSize.clear();
-	Pcinplusprev.clear();
 	Pcinminusprev.clear();
 
 	M.clear();
@@ -1209,15 +1321,7 @@ char Datins[100];
 	rtrans.clear();
 	GD.clear();
 	GDprob.clear();
-	Pcinplus.clear();
 	Pcinminus.clear();
-      
-
-  
-
-
-
-
   
 }
 
